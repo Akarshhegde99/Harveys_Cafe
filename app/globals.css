@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+/* Garet Font Family */
+@font-face {
+  font-family: 'Garet';
+  src: url('/garet/Garet-Book.woff2') format('woff2'),
+       url('/garet/Garet-Book.woff') format('woff'),
+       url('/garet/Garet-Book.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Garet';
+  src: url('/garet/Garet-Heavy.woff2') format('woff2'),
+       url('/garet/Garet-Heavy.woff') format('woff'),
+       url('/garet/Garet-Heavy.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Grimpt Font Family */
+@font-face {
+  font-family: 'Grimpt';
+  src: url('/grimpt/Grimpt-PrintRegular.woff2') format('woff2'),
+       url('/grimpt/Grimpt-PrintRegular.woff') format('woff'),
+       url('/grimpt/Grimpt-PrintRegular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Grimpt';
+  src: url('/grimpt/Grimpt-PrintLight.woff2') format('woff2'),
+       url('/grimpt/Grimpt-PrintLight.woff') format('woff'),
+       url('/grimpt/Grimpt-PrintLight.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Grimpt';
+  src: url('/grimpt/Grimpt-PrintBold.woff2') format('woff2'),
+       url('/grimpt/Grimpt-PrintBold.woff') format('woff'),
+       url('/grimpt/Grimpt-PrintBold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Grimpt Brush';
+  src: url('/grimpt/Grimpt-Brush.woff2') format('woff2'),
+       url('/grimpt/Grimpt-Brush.woff') format('woff'),
+       url('/grimpt/Grimpt-Brush.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Grimpt Script';
+  src: url('/grimpt/Grimpt-Script.woff2') format('woff2'),
+       url('/grimpt/Grimpt-Script.woff') format('woff'),
+       url('/grimpt/Grimpt-Script.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+.font-garet {
+  font-family: "Garet", sans-serif;
+}
+
+.font-grimpt {
+  font-family: "Grimpt", serif;
+}
+
+.font-grimpt-brush {
+  font-family: "Grimpt Brush", cursive;
+}
+
+.font-grimpt-script {
+  font-family: "Grimpt Script", cursive;
+}
+
+/* Print styles for invoices */
+@media print {
+  @page {
+    margin: 0.5in;
+    size: A4;
+  }
+  
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+    color: black !important;
+    background: white !important;
+  }
+  
+  /* Print utility classes */
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  .print\:block {
+    display: block !important;
+  }
+  
+  .print\:bg-white {
+    background-color: white !important;
+  }
+  
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  
+  .print\:rounded-none {
+    border-radius: 0 !important;
+  }
+  
+  .print\:px-0 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  .print\:py-4 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+  
+  /* Ensure colors print correctly */
+  .text-\[\#eb3e04\] {
+    color: #eb3e04 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .bg-blue-100 {
+    background-color: #dbeafe !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .bg-green-100 {
+    background-color: #dcfce7 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .bg-yellow-100 {
+    background-color: #fef3c7 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .bg-red-100 {
+    background-color: #fee2e2 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .bg-gray-50 {
+    background-color: #f9fafb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .bg-yellow-50 {
+    background-color: #fffbeb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Table styles for printing */
+  table {
+    page-break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  thead {
+    display: table-header-group;
+  }
+  
+  tfoot {
+    display: table-footer-group;
+  }
+}
