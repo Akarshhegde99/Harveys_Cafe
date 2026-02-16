@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Razorpay from 'razorpay'
 
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-})
-
 export async function POST(request: NextRequest) {
   try {
-    const { amount, currency = 'INR', items, visitTime, userDetails } = await request.json()
+    const key_id = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!key_id || !key_secret) {
+      console.error('Razorpay keys are missing from environment variables');
+      return NextResponse.json(
+        { error: 'Payment gateway configuration missing' },
+        { status: 500 }
+      );
+    }
+
+    const razorpay = new Razorpay({
+      key_id,
+      key_secret,
+    });
+
+    const body = await request.json();
+    const { amount, currency = 'INR', items, visitTime, userDetails } = body;
 
     if (!amount || !items || !visitTime || !userDetails) {
       return NextResponse.json(
