@@ -302,7 +302,7 @@ const InvoicesPage = () => {
             >
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h2 className="text-2xl font-grimpt font-bold text-gray-800 mb-2">No Invoices Found</h2>
-              <p className="text-gray-600 font-garet mb-6">You haven't made any orders yet.</p>
+              <p className="text-gray-600 font-garet mb-6">You haven&apos;t made any orders yet.</p>
               <Link
                 href="/menu"
                 className="inline-flex items-center bg-[#eb3e04] text-white px-6 py-3 rounded-xl font-grimpt font-bold hover:bg-red-600 transition-colors"

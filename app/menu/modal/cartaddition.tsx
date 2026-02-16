@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { X, Plus, Minus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 interface CartAdditionProps {
   isOpen: boolean;
@@ -166,16 +167,19 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                 variants={itemVariants}
                 whileHover={{ scale: 1.02 }}
               >
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = '';
-                    e.currentTarget.className = 'w-full h-full flex items-center justify-center bg-gray-300 text-gray-500';
-                    e.currentTarget.innerHTML = 'IMAGE';
-                  }}
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 500px"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                </div>
               </motion.div>
 
               {/* Item details */}

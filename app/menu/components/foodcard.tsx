@@ -172,5 +172,6 @@ const Foodcard: React.FC<FoodcardProps> = React.memo(({ image, name, price, cate
   );
 });
 
+Foodcard.displayName = 'Foodcard';
 
 export default Foodcard;

@@ -18,13 +18,14 @@ const InvoiceDetailPage = () => {
     if (params.id) {
       fetchInvoice(params.id as string);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   const fetchInvoice = async (invoiceId: string) => {
     try {
       setIsLoading(true);
       console.log('Fetching invoice from Supabase:', invoiceId);
-      
+
       const { data: invoiceData, error } = await supabase
         .from('invoices')
         .select('*')
@@ -39,7 +40,7 @@ const InvoiceDetailPage = () => {
 
       if (invoiceData) {
         console.log('Fetched invoice from Supabase:', invoiceData);
-        
+
         // Convert snake_case to camelCase for frontend
         const convertedInvoice = {
           id: invoiceData.id,
@@ -60,7 +61,7 @@ const InvoiceDetailPage = () => {
           updatedAt: invoiceData.updated_at,
           restaurantDetails: invoiceData.restaurant_details
         };
-        
+
         setInvoice(convertedInvoice);
       } else {
         router.push('/invoices');
