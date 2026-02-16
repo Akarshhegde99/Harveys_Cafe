@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Plus, Minus, Trash2, ShoppingBag, Clock, CreditCard, ArrowLeft } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Skeleton, ListSkeleton } from '@/components/Skeleton';
+import Image from 'next/image';
 
 function Cart() {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, getCartItemsCount, maxTotalItems, isLoading } = useCart();
@@ -147,17 +148,19 @@ function Cart() {
                     className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0"
                     whileHover={{ scale: 1.05 }}
                   >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.style.display = 'none';
-                        const sibling = target.nextElementSibling as HTMLElement;
-                        if (sibling) sibling.style.display = 'flex';
-                      }}
-                    />
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 64px, 80px"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    </div>
                     <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500 text-xs" style={{ display: 'none' }}>
                       IMAGE
                     </div>

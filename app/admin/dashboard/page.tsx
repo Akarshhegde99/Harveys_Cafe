@@ -90,6 +90,7 @@ function AdminDashboard() {
     }, 60000) // Check every minute
 
     return () => clearInterval(resetInterval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadData = async () => {
