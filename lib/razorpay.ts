@@ -27,11 +27,16 @@ export const loadRazorpay = (): Promise<any> => {
   });
 };
 
-// Initialize Razorpay instance
-export const razorpay = new Razorpay({
-  key_id: razorpayConfig.key_id,
-  key_secret: razorpayConfig.key_secret,
-});
+// Initialize Razorpay instance lazily
+export const getRazorpayInstance = () => {
+  if (!razorpayConfig.key_id || !razorpayConfig.key_secret) {
+    throw new Error('Razorpay keys are missing');
+  }
+  return new Razorpay({
+    key_id: razorpayConfig.key_id,
+    key_secret: razorpayConfig.key_secret,
+  });
+};
 
 // Razorpay options for frontend
 export const getRazorpayOptions = (amount: number, orderId: string, userDetails: any) => ({
@@ -54,7 +59,7 @@ export const getRazorpayOptions = (amount: number, orderId: string, userDetails:
     return response;
   },
   modal: {
-    ondismiss: function() {
+    ondismiss: function () {
       console.log('Payment modal dismissed');
     }
   }
