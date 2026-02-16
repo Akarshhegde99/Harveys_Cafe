@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       const price = parseFloat(item.price.replace('₹', ''))
       return total + (price * item.quantity)
     }, 0)
-    
+
     const advanceAmount = subtotal * 0.5 // 50% advance
     const remainingAmount = subtotal - advanceAmount
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       paymentId,
       visitTime,
       items,
-      userDetails,
+      userdetails: userDetails,
       status: 'pending',
       advancePaid: true,
       subtotal,
@@ -97,6 +97,46 @@ export async function POST(request: NextRequest) {
     };
 
     // Save invoice to database
+    // 1. Decrement stock for each item FIRST
+    try {
+      console.log('Stock management: Processing items...');
+      for (const item of items) {
+        // Find the item in menu_items by ID if available, otherwise by name
+        let query = supabase.from('menu_items').select('id, available_count');
+
+        if (item.menu_item_id && !item.menu_item_id.startsWith('static')) {
+          query = query.eq('id', item.menu_item_id);
+        } else {
+          query = query.ilike('name', item.name.trim());
+        }
+
+        const { data: menuItem, error: fetchError } = await query.single();
+
+        if (menuItem && !fetchError) {
+          const newCount = Math.max(0, (menuItem.available_count || 0) - (item.quantity || 1));
+
+          const { error: updateError } = await supabase
+            .from('menu_items')
+            .update({
+              available_count: newCount,
+              stock: newCount
+            })
+            .eq('id', menuItem.id);
+
+          if (updateError) {
+            console.error(`Failed to update stock for ${item.name}:`, updateError);
+          } else {
+            console.log(`Successfully updated stock for ${item.name}: ${menuItem.available_count} -> ${newCount}`);
+          }
+        } else {
+          console.warn(`Could not find database record for "${item.name}" to update stock.`);
+        }
+      }
+    } catch (stockError) {
+      console.error('Error during stock management phase:', stockError);
+    }
+
+    // 2. Save invoice to Supabase
     try {
       const { error: invoiceError } = await supabase
         .from('invoices')
@@ -104,12 +144,12 @@ export async function POST(request: NextRequest) {
 
       if (invoiceError) {
         console.error('Error saving invoice to database:', invoiceError);
-        // Continue without failing the payment verification
       }
     } catch (error) {
-      console.error('Error saving invoice:', error);
-      // Continue without failing the payment verification
+      console.error('Error in invoice storage phase:', error);
     }
+
+
 
     // Save order to database
     try {

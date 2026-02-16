@@ -3,11 +3,13 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { X, Plus, Minus } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface CartAdditionProps {
   isOpen: boolean;
   onClose: () => void;
   item: {
+    id: string;
     image: string;
     name: string;
     price: string[]; // Array of prices for different sizes
@@ -15,11 +17,12 @@ interface CartAdditionProps {
     category: string;
     size?: string[]; // Array of sizes
     type?: string;
+    available_count?: number;
   } | null;
 }
 
 function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
-  const { addToCart, isLoading } = useCart();
+  const { addToCart, isLoading, getCartItemsCount, maxTotalItems } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0); // Track selected size index
 
@@ -33,15 +36,38 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
         category: item.category,
         selectedSize: item.size ? item.size[selectedSizeIndex] : undefined,
         type: item.type,
+        menu_item_id: item.id,
       };
-      await addToCart(cartItem, quantity);
+      await addToCart(cartItem, quantity, item.available_count);
       setQuantity(1);
       setSelectedSizeIndex(0);
       onClose();
     }
   };
 
-  const incrementQuantity = () => setQuantity(prev => prev + 1);
+  const incrementQuantity = () => {
+    const totalInCart = getCartItemsCount();
+
+    // Check total limit
+    if (totalInCart + quantity >= maxTotalItems) {
+      toast.error(`Order limit is ${maxTotalItems} items total.`, { icon: '🚫' });
+      return;
+    }
+
+    // Check stock limit
+    if (item?.available_count !== undefined && quantity >= item.available_count) {
+      toast.error(`Only ${item.available_count} items left in stock.`, { icon: '⚠️' });
+      return;
+    }
+
+    // Check per-item convenience limit (optional but good)
+    if (quantity >= 3) {
+      toast.error('Maximum 3 of the same item allowed.', { icon: '🚫' });
+      return;
+    }
+
+    setQuantity(prev => prev + 1);
+  };
   const decrementQuantity = () => setQuantity(prev => Math.max(1, prev - 1));
 
   if (!item) return null;
@@ -56,11 +82,11 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
   };
 
   const modalVariants = {
-    hidden: { 
+    hidden: {
       y: "100%",
       opacity: 0
     },
-    visible: { 
+    visible: {
       y: 0,
       opacity: 1,
       transition: {
@@ -69,7 +95,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
         stiffness: 400
       }
     },
-    exit: { 
+    exit: {
       y: "100%",
       opacity: 0,
       transition: {
@@ -80,8 +106,8 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
 
   const contentVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: {
         delay: 0.2,
@@ -100,7 +126,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <motion.div 
+          <motion.div
             className="fixed inset-0 z-40 bg-black bg-opacity-50"
             variants={backdropVariants}
             initial="hidden"
@@ -110,14 +136,14 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
           />
 
           {/* Modal - slides from bottom */}
-          <motion.div 
+          <motion.div
             className="fixed bottom-0 left-0 right-0 text-white bg-[url(/modalbg.svg)] rounded-t-3xl z-50"
             variants={modalVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
           >
-            <motion.div 
+            <motion.div
               className="p-6"
               variants={contentVariants}
               initial="hidden"
@@ -132,16 +158,16 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                 variants={itemVariants}
               >
                 <X className="w-5 h-5 text-black" />
-              </motion.button> 
+              </motion.button>
 
               {/* Item image */}
-              <motion.div 
+              <motion.div
                 className="w-full h-48 bg-gray-200 rounded-lg mb-4 overflow-hidden"
                 variants={itemVariants}
                 whileHover={{ scale: 1.02 }}
               >
-                <img 
-                  src={item.image} 
+                <img
+                  src={item.image}
                   alt={item.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -154,7 +180,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
 
               {/* Item details */}
               <motion.div className="mb-6" variants={itemVariants}>
-                <motion.h2 
+                <motion.h2
                   className="text-2xl font-bold font-grimpt mb-2"
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -162,7 +188,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                 >
                   {item.name}
                 </motion.h2>
-                <motion.p 
+                <motion.p
                   className="text-lg font-semibold text-[#eb3e04] font-garet mb-3"
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -172,12 +198,11 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                   {item.price[selectedSizeIndex]}
                 </motion.p>
                 {item.type && (
-                  <motion.span 
-                    className={`inline-block px-2 py-1 rounded text-xs font-bold mb-3 ${
-                      item.type === 'Veg' 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-red-500 text-white'
-                    }`}
+                  <motion.span
+                    className={`inline-block px-2 py-1 rounded text-xs font-bold mb-3 ${item.type === 'Veg'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-red-500 text-white'
+                      }`}
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.45 }}
@@ -185,7 +210,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                     {item.type}
                   </motion.span>
                 )}
-                <motion.p 
+                <motion.p
                   className="text-white font-garet leading-relaxed"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -197,7 +222,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
 
               {/* Size selector (if multiple sizes available) */}
               {item.size && item.size.length > 1 && (
-                <motion.div 
+                <motion.div
                   className="mb-6"
                   variants={itemVariants}
                 >
@@ -207,11 +232,10 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                       <motion.button
                         key={size}
                         onClick={() => setSelectedSizeIndex(index)}
-                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                          selectedSizeIndex === index
-                            ? 'bg-white text-black'
-                            : 'bg-gray-500 text-white hover:bg-gray-400'
-                        }`}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${selectedSizeIndex === index
+                          ? 'bg-white text-black'
+                          : 'bg-gray-500 text-white hover:bg-gray-400'
+                          }`}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         initial={{ opacity: 0, y: 10 }}
@@ -229,7 +253,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
               )}
 
               {/* Quantity selector */}
-              <motion.div 
+              <motion.div
                 className="flex items-center justify-between mb-6"
                 variants={itemVariants}
               >
@@ -244,8 +268,8 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                   >
                     <Minus className="w-4 text-black h-4" />
                   </motion.button>
-                  
-                  <motion.span 
+
+                  <motion.span
                     className="text-xl font-bold w-8 text-center"
                     key={quantity}
                     initial={{ scale: 1.5, opacity: 0 }}
@@ -254,7 +278,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                   >
                     {quantity}
                   </motion.span>
-                  
+
                   <motion.button
                     onClick={incrementQuantity}
                     className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-100"
@@ -276,7 +300,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                 whileTap={{ scale: isLoading ? 1 : 0.98 }}
               >
                 {isLoading ? (
-                  <motion.div 
+                  <motion.div
                     className="flex items-center justify-center"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

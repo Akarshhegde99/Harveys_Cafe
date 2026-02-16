@@ -9,6 +9,8 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { loadRazorpay } from '@/lib/razorpay';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
+import { Skeleton, ListSkeleton } from '@/components/Skeleton';
+
 
 const InvoicesPage = () => {
   const { user, userDetails } = useAuth();
@@ -33,7 +35,7 @@ const InvoicesPage = () => {
         console.log('Fetching invoices from Supabase for user:', userDetails.email);
         console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
         console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-        
+
         // Check if Supabase is properly configured
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
           console.error('Supabase environment variables not configured');
@@ -41,7 +43,7 @@ const InvoicesPage = () => {
           setInvoices([]);
           return;
         }
-        
+
         // Fetch from Supabase directly instead of using context
         const { data: invoices, error } = await supabase
           .from('invoices')
@@ -55,7 +57,7 @@ const InvoicesPage = () => {
         if (error) {
           console.error('Error fetching invoices from Supabase:', error);
           console.error('Error details:', JSON.stringify(error, null, 2));
-          
+
           // Check if it's a table doesn't exist error
           if (error.message?.includes('relation "invoices" does not exist')) {
             toast.error('Database table not found. Please create the invoices table in Supabase.');
@@ -67,7 +69,7 @@ const InvoicesPage = () => {
         }
 
         console.log('Fetched invoices from Supabase:', invoices);
-        
+
         // Convert snake_case to camelCase for frontend
         const convertedInvoices = (invoices || []).map((invoice: any) => ({
           id: invoice.id,
@@ -88,7 +90,7 @@ const InvoicesPage = () => {
           updatedAt: invoice.updated_at,
           restaurantDetails: invoice.restaurant_details
         }));
-        
+
         setInvoices(convertedInvoices);
       } catch (error) {
         console.error('Error fetching invoices:', error);
@@ -105,7 +107,7 @@ const InvoicesPage = () => {
     try {
       // Load Razorpay script
       const Razorpay = await loadRazorpay();
-      
+
       // Create order on backend
       const orderResponse = await fetch('/api/create-order', {
         method: 'POST',
@@ -164,12 +166,12 @@ const InvoicesPage = () => {
             if (verifyResponse.ok) {
               const result = await verifyResponse.json();
               toast.success(`Payment successful! Invoice #${result.invoiceNumber} generated.`);
-              
+
               // Update invoice status in Supabase
               const { error: updateError } = await supabase
                 .from('invoices')
-                .update({ 
-                  status: 'confirmed', 
+                .update({
+                  status: 'confirmed',
                   payment_status: 'advance_paid',
                   updated_at: new Date().toISOString()
                 })
@@ -182,13 +184,13 @@ const InvoicesPage = () => {
               }
 
               // Update local state
-              const updatedInvoices = invoices.map(inv => 
-                inv.id === invoice.id 
+              const updatedInvoices = invoices.map(inv =>
+                inv.id === invoice.id
                   ? { ...inv, status: 'confirmed' as const, paymentStatus: 'advance_paid' as const }
                   : inv
               );
               setInvoices(updatedInvoices);
-              
+
             } else {
               toast.error('Payment verification failed');
             }
@@ -247,15 +249,19 @@ const InvoicesPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-4 border-[#eb3e04] border-t-transparent rounded-full"
-        />
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <Skeleton className="h-4 w-32 mb-4 bg-gray-200" />
+            <Skeleton className="h-10 w-64 mb-2 bg-gray-200" />
+            <Skeleton className="h-4 w-48 bg-gray-200" />
+          </div>
+          <ListSkeleton />
+        </div>
       </div>
     );
   }
+
 
   return (
     <ProtectedRoute>
@@ -267,9 +273,9 @@ const InvoicesPage = () => {
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <Link href="/" className="inline-flex items-center text-[#eb3e04] hover:text-red-600 transition-colors mb-4">
+            <Link href="/menu" className="inline-flex items-center text-[#eb3e04] hover:text-red-600 transition-colors mb-4">
               <ArrowLeft className="w-5 h-5 mr-2" />
-              Back to Home
+              Back to Menu
             </Link>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-4">
@@ -327,7 +333,7 @@ const InvoicesPage = () => {
                           {invoice.paymentStatus === 'pending' ? 'PENDING PAYMENT' : invoice.paymentStatus.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 font-garet">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
@@ -413,7 +419,7 @@ const InvoicesPage = () => {
                           Pay Now
                         </motion.button>
                       )}
-                      
+
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

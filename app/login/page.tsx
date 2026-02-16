@@ -3,16 +3,20 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
+import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 export default function Login() {
+  const [isSignUp, setIsSignUp] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    name: '',
+    phone: ''
   })
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const { user, loading: authLoading, checkAuth } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -43,34 +47,69 @@ export default function Login() {
     }))
   }
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.email || !formData.password) {
-      toast.error('Please fill in all fields')
+    if (!formData.email || !formData.password || (isSignUp && (!formData.name || !formData.phone))) {
+      toast.error('Please fill in all required fields')
       return
     }
 
     setLoading(true)
     try {
-      // Hardcoded credentials
-      if (formData.email === 'demo@margros.in' && formData.password === 'demo@123') {
-        // Set user token in localStorage
-        localStorage.setItem('userToken', 'user-authenticated')
-        localStorage.setItem('userEmail', formData.email)
-        localStorage.setItem('userName', 'Demo User')
-        localStorage.setItem('userPhone', '1234567890')
+      if (isSignUp) {
+        // Sign Up logic
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.name,
+              phone: formData.phone,
+            }
+          }
+        })
 
-        // Refresh auth state in the context immediately
-        checkAuth()
+        if (error) {
+          toast.error(error.message)
+          return
+        }
+
+        if (data.user) {
+          toast.success('Account created successfully!')
+          // Depending on Supabase settings, user might need to verify email
+          // or they might be signed in immediately
+          if (data.session) {
+            router.push('/menu')
+          } else {
+            toast('Please check your email for verification link', { icon: '📧' })
+            setIsSignUp(false) // Switch to login
+          }
+        }
+      } else {
+        // Check if user is trying to login with admin credentials
+        if (formData.email === 'admin@harveys.com') {
+          toast.error('Please use the Admin Portal for admin access');
+          setLoading(false);
+          return;
+        }
+
+        // Login logic
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        })
+
+        if (error) {
+          toast.error(error.message)
+          return
+        }
 
         toast.success('Login successful!')
         router.push('/menu')
-      } else {
-        toast.error('Invalid email or password')
       }
     } catch (error) {
-      toast.error('Login failed. Please try again.')
+      toast.error(`${isSignUp ? 'Registration' : 'Login'} failed. Please try again.`)
     } finally {
       setLoading(false)
     }
@@ -80,14 +119,50 @@ export default function Login() {
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-grimpt-brush text-white mb-4">Welcome Back</h1>
+          <h1 className="text-4xl font-grimpt-brush text-white mb-4">
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
+          </h1>
           <p className="text-lg font-garet text-gray-300">
-            Enter your details to continue
+            {isSignUp ? 'Join us for extraordinary taste' : 'Enter your details to continue'}
           </p>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleAuth} className="space-y-6">
+            {isSignUp && (
+              <>
+                <div>
+                  <label htmlFor="name" className="block text-white font-garet mb-2">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 font-garet focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-white font-garet mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 font-garet focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                    placeholder="Enter your phone number"
+                    required
+                  />
+                </div>
+              </>
+            )}
             <div>
               <label htmlFor="email" className="block text-white font-garet mb-2">
                 Email Address
@@ -125,11 +200,21 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-transparent border-2 border-white text-white font-grimpt text-xl font-bold py-3 rounded-lg hover:bg-white hover:text-[#eb3e04] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? (isSignUp ? 'Creating Account...' : 'Logging in...') : (isSignUp ? 'Sign Up' : 'Login')}
             </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-white font-garet hover:underline"
+            >
+              {isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
+            </button>
+          </div>
         </div>
       </div>
     </main>
   )
 }
+

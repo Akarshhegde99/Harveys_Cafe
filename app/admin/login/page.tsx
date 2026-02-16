@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react'
@@ -34,7 +35,7 @@ export default function AdminLogin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.email || !formData.password) {
       toast.error('Please fill in all fields')
       return
@@ -43,30 +44,26 @@ export default function AdminLogin() {
     setLoading(true)
 
     try {
-      // Check admin credentials
-      if (formData.email === 'admin@harveys.com' && formData.password === 'admin@123') {
-        // Set admin token in localStorage
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      })
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      // Check if user is actually the admin (hardcoded check for now as requested, but using Supabase auth)
+      if (formData.email === 'admin@harveys.com') {
         localStorage.setItem('adminToken', 'admin-authenticated')
         localStorage.setItem('adminEmail', formData.email)
-        
-        // Request notification permissions for mobile alerts
-        if ('Notification' in window) {
-          try {
-            const permission = await Notification.requestPermission()
-            if (permission === 'granted') {
-              toast.success('Admin login successful! Notifications enabled for new orders.')
-            } else {
-              toast.success('Admin login successful! Enable notifications for order alerts.')
-            }
-          } catch (error) {
-            toast.success('Admin login successful!')
-          }
-        } else {
-          toast.success('Admin login successful!')
-        }
-        
+
+        toast.success('Admin login successful!')
         router.push('/admin/dashboard')
       } else {
+        // If it's a regular user trying to login to admin, sign them out and show error
+        await supabase.auth.signOut()
         toast.error('Invalid admin credentials')
       }
     } catch (error) {
@@ -75,6 +72,7 @@ export default function AdminLogin() {
       setLoading(false)
     }
   }
+
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
@@ -93,7 +91,7 @@ export default function AdminLogin() {
               className="mx-auto mb-6"
             />
           </motion.div>
-          <motion.h1 
+          <motion.h1
             className="text-4xl font-grimpt-brush text-white mb-4"
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -101,7 +99,7 @@ export default function AdminLogin() {
           >
             Admin Portal
           </motion.h1>
-          <motion.p 
+          <motion.p
             className="text-lg font-garet text-gray-300"
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -111,7 +109,7 @@ export default function AdminLogin() {
           </motion.p>
         </div>
 
-        <motion.div 
+        <motion.div
           className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20"
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

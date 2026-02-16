@@ -1,97 +1,87 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { User } from '@supabase/supabase-js'
 
-interface User {
+interface UserDetails {
+  name: string
   email: string
+  phone: string
 }
 
 interface AuthContextType {
   user: User | null
-  userDetails: {
-    name: string
-    email: string
-    phone: string
-  } | null
+  userDetails: UserDetails | null
   loading: boolean
   signOut: () => Promise<void>
-  checkAuth: () => void
+  checkAuth: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [userDetails, setUserDetails] = useState<{
-    name: string
-    email: string
-    phone: string
-  } | null>(null)
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const prevEmailRef = useRef<string | null>(null)
 
-  const checkAuth = () => {
-    if (typeof window === 'undefined') {
-      setLoading(false)
-      return
-    }
+  const checkAuth = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) throw error
 
-    const userToken = localStorage.getItem('userToken')
-    if (userToken === 'user-authenticated') {
-      const email = localStorage.getItem('userEmail') || ''
-      const name = localStorage.getItem('userName') || ''
-      const phone = localStorage.getItem('userPhone') || ''
-
-      // Only update state if email actually changed or user is null
-      if (prevEmailRef.current !== email || !user) {
-        prevEmailRef.current = email
-        setUser({ email })
+      if (session?.user) {
+        setUser(session.user)
+        // For now, we'll use the user metadata for name and phone if available, 
+        // or just set defaults. In a real app, you might fetch this from a 'profiles' table.
         setUserDetails({
-          name,
-          email,
-          phone
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          phone: session.user.user_metadata?.phone || session.user.phone || ''
         })
-      }
-    } else {
-      if (prevEmailRef.current !== null) {
-        prevEmailRef.current = null
+      } else {
         setUser(null)
         setUserDetails(null)
       }
+    } catch (error) {
+      console.error('Error checking auth:', error)
+      setUser(null)
+      setUserDetails(null)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => {
+    // Initial check
     checkAuth()
 
-    // Listen for storage changes (for cross-tab sync)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'userToken') {
-        checkAuth()
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event)
+      if (session?.user) {
+        setUser(session.user)
+        setUserDetails({
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          phone: session.user.user_metadata?.phone || session.user.phone || ''
+        })
+      } else {
+        setUser(null)
+        setUserDetails(null)
       }
-    }
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', handleStorageChange)
-    }
+      setLoading(false)
+    })
 
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('storage', handleStorageChange)
-      }
+      subscription.unsubscribe()
     }
-  }, [user])
+  }, [])
 
   const signOut = async () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('userToken')
-      localStorage.removeItem('userEmail')
-      localStorage.removeItem('userName')
-      localStorage.removeItem('userPhone')
-    }
+    await supabase.auth.signOut()
     setUser(null)
     setUserDetails(null)
     router.push('/login')
@@ -119,3 +109,4 @@ export function useAuth() {
   }
   return context
 }
+

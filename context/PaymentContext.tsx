@@ -68,8 +68,9 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
       const orderData = await orderResponse.json()
 
       if (!orderResponse.ok) {
-        throw new Error(orderData.error || 'Failed to create order request')
+        throw new Error(orderData.details || orderData.error || 'Failed to create order request')
       }
+
 
       // Order is now stored in Supabase, no need for localStorage
       console.log('Order created and stored in Supabase:', orderData.order)
@@ -188,7 +189,7 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
             }
           },
           modal: {
-            ondismiss: function() {
+            ondismiss: function () {
               toast.error('Payment cancelled')
             }
           }

@@ -16,23 +16,28 @@ export default function ProtectedRoute({ children, requiredRole = 'customer' }: 
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    if (requiredRole === 'admin') {
-      // Check admin authentication
-      const adminToken = localStorage.getItem('adminToken')
-      setIsAdmin(!!adminToken)
-      setAdminLoading(false)
-      
-      if (!adminToken) {
-        router.push('/admin/login')
+    if (!loading) {
+      if (requiredRole === 'admin') {
+        const isUserAdmin = user?.email === 'admin@harveys.com'
+        setIsAdmin(isUserAdmin)
+        setAdminLoading(false)
+
+        if (!isUserAdmin) {
+          router.push('/admin/login')
+        }
+      } else {
+        // Customer route - check regular auth
+        if (!user) {
+          router.push('/login')
+        } else if (user.email === 'admin@harveys.com') {
+          // Admin cannot be a customer
+          router.push('/admin/dashboard')
+        }
+        setAdminLoading(false)
       }
-    } else {
-      // Customer route - check regular auth
-      if (!loading && !user) {
-        router.push('/login')
-      }
-      setAdminLoading(false)
     }
   }, [user, loading, router, requiredRole])
+
 
   if (loading || adminLoading) {
     return (
