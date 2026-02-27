@@ -122,6 +122,14 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - Touch-friendly interface
 - Fast loading with Next.js optimization
 
+## 📚 Documentation
+
+For more detailed information, please refer to the following guides:
+
+- [Technical Guide](docs/TECHNICAL_GUIDE.md) - Architecture, Tech Stack, and Core Logic
+- [API Usage Guide](docs/API_USAGE.md) - Detailed API Endpoints and Examples
+- [Database Schema](docs/DATABASE_SCHEMA.md) - Table structures and relationships
+
 ## 🚀 Deployment
 
 The app is ready for deployment on Vercel:
